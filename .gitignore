@@ -1,0 +1,16 @@
+# Generated outputs (re-created by run_all.R)
+outputs/*
+!outputs/.gitkeep
+
+# R / RStudio
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+.Ruserdata
+
+# OS / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
