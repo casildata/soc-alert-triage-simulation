@@ -18,7 +18,8 @@ baseline <- list(
   balk_queue_length = 15,
   # Reneging: a low-severity alert still waiting after U(min, max) minutes expires unreviewed
   low_expiry = c(60, 120),
-  # Service level: triage should start within this many minutes
+  # Service level: triage should start within this many minutes. The low-severity SLA is
+  # never reached in practice: a low alert expires (low_expiry) before it has waited 240 min.
   triage_sla = c(high = 15, medium = 60, low = 240)
 )
 

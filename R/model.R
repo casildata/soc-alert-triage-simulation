@@ -17,6 +17,7 @@ rtriangle <- function(n, a, c, b) {
 }
 
 simulate_soc <- function(p, horizon, seed) {
+  validate_params(p)
   set.seed(seed)
   env <- simmer(paste("SOC -", p$name))
 
@@ -74,8 +75,9 @@ simulate_soc <- function(p, horizon, seed) {
     wrap()
 }
 
-# Replication i uses the same seed in every scenario (common random numbers), so
-# scenario differences are less noisy.
+# Replication i uses the same seed in every scenario. This is not common random numbers:
+# all draws share one RNG stream in event order, so the streams drift apart as soon as
+# staffing changes the order of events, and scenarios are compared on independent CIs.
 run_scenario <- function(p, sim = SIM) {
   lapply(seq_len(sim$replications), function(i) simulate_soc(p, sim$horizon, sim$seed + i))
 }

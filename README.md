@@ -20,6 +20,10 @@
 - **Priority queuing hides the damage:** fewer than 2% of high-severity alerts are ever triaged late, even at 22/hour. The cost of overload falls on low-severity alerts, up to 76% of which go unreviewed, and on the real incidents among them.
 - **Improved on the coursework:** balking and reneging are now measured directly, rather than inferred from arrivals still in the system. Details: [CHANGELOG.md](CHANGELOG.md).
 
+![Stress test: where each staffing option breaks](docs/figures/stress_test.png)
+
+*Each line is a staffing option (tier-1 + tier-2 analysts); dashed lines are the service targets. Details in [Stress test](#stress-test).*
+
 ---
 
 ## Approach
@@ -60,10 +64,12 @@ flowchart LR
 | Priorities | High > medium > low in both queues (non-preemptive) |
 | Ground truth | Each alert's "real incident" flag is drawn on arrival but only revealed at triage, so the model can count real incidents that were auto-closed or expired: the cost of overload |
 | Run length | 5 days per replication; day 1 discarded as warm-up; alerts from the last 4 hours excluded (outcome not yet known) |
-| Variance reduction | Replication *i* uses the same seed in every scenario (common random numbers) |
+| Seeds | Replication *i* uses the same seed in every scenario. This is not common random numbers: all draws share one random stream in event order, so the scenarios drift apart once staffing changes the order of events. Scenarios are compared on independent confidence intervals |
 | Censoring | An alert still waiting at the end counts as an SLA breach only if it has already waited past the SLA |
+| What can be missed | Only low-severity alerts are auto-closed or expire, so "real incidents missed" means real incidents among low-severity alerts (5% of them). High and medium alerts can only be late. Low alerts expire within 120 minutes, so their 240-minute SLA is never reached |
+| Analysts | "2 + 2" means two analysts on duty in each tier at all times. Covering one seat 24/7 takes about 4.2 full-time staff (8,760 hours a year ÷ 2,080 paid hours, before leave and training), so the baseline is about 17 FTE and each extra seat about 4 more |
 
-All parameters live in [`R/params.R`](R/params.R) and are **illustrative**.
+All parameters live in [`R/params.R`](R/params.R) and are **illustrative**. Every scenario is checked by `validate_params()` ([`R/validate.R`](R/validate.R)) before it runs.
 
 ## Results
 
@@ -95,7 +101,7 @@ Already a useful read: **tier-2 is the slower queue** (36 min average wait for a
 | Tier-1 utilization | 69.4% | 46.4% | 69.3% | 51.5% | 53.4% |
 | Tier-2 utilization | 69.8% | 69.9% | 46.5% | 68.9% | 69.2% |
 
-![Scenario comparison](docs/figures/scenario_comparison.png)
+![Scenario comparison: tier-2 wait, high-severity triage wait and utilization by scenario](docs/figures/scenario_comparison.png)
 
 - **Tier-2 is the bottleneck.** A confirmed incident waits about 34 minutes for an investigator unless tier-2 gets another analyst. Detection tuning and SOAR enrichment cut tier-1 load but don't change the number of real incidents, so they don't help here.
 - **Tier-1 already meets its SLAs.** An extra tier-1 analyst cuts high-severity triage from 1.8 to 0.4 minutes, but high-severity SLA breaches are already only 0.1%.
@@ -112,11 +118,10 @@ The alert rate is swept from 10 to 22 per hour for four staffing options, with e
 | 2 + 3 (+1 tier-2) | 14.4 / 21.4 | 12 | 14 | Missed incidents (7.5/week) |
 | 3 + 3 (+1 each) | 21.6 / 21.4 | **18** | 20 | Tier-2 wait (98 min) and missed incidents (4.1/week) |
 
-"Capacity" is the alert rate at which a tier would be 100% busy if no alert were dropped: 7.2 alerts/hour per tier-1 analyst (8.3 minutes of triage per alert on average) and 7.1 per tier-2 analyst (14% of alerts are real incidents, 60 minutes each).
-
-![Stress test](docs/figures/stress_test.png)
+"Capacity" is the alert rate at which a tier would be 100% busy if no alert were dropped: 7.2 alerts/hour per tier-1 analyst (8.3 minutes of triage per alert on average) and 7.1 per tier-2 analyst (14% of alerts are real incidents, 60 minutes each). The figure is at the top of this page.
 
 - **Fixing one tier exposes the other.** An extra tier-1 analyst buys nothing on its own: tier-2 still breaks at 12 alerts/hour. An extra tier-2 analyst buys one step, to 12/hour; then tier-1 starts auto-closing low-severity alerts and real incidents go with them.
+- **A faster tier-1 makes tier-2 worse.** At 12 alerts/hour a confirmed incident waits 100 minutes for tier-2 with 3 + 2 analysts, against 70 with 2 + 2: the extra tier-1 analyst drops fewer alerts, so more real incidents reach tier-2. The reverse also holds: the 2 + 3 team's tier-2 wait stays under target up to 22 alerts/hour partly because tier-1 is auto-closing up to 75% of low-severity alerts, and the real incidents among them never reach tier-2. A good tier-2 number can be bought by missing incidents upstream.
 - **Each option breaks well below its capacity.** Waits climb steeply as utilization approaches 100%, so the 2 + 2 team breaks at about 84% of tier-2 capacity. Staffing to the average load isn't enough.
 - **Priority queuing protects high-severity alerts.** Under every option, fewer than 2% of high-severity alerts are triaged late, even at 22/hour. Overload shows up instead as unreviewed low-severity alerts (up to 76%) and missed incidents (up to 86 a week).
 - **Breaking points are approximate at the edges.** They're judged on the mean of 30 replications, and the confidence intervals at the boundary straddle the target (for example, 3 + 3 at 18/hour waits 51 minutes, with a CI of 39–63). Past tier-2 capacity the queue grows without limit, so the waits reported there depend on the 5-day run length.
@@ -129,9 +134,9 @@ Per-rate tables for every metric: [`docs/results.md`](docs/results.md#3-stress-t
 
 | Component | Status |
 |---|---|
-| Metrics (`R/metrics.R`) | 11/11 tests pass on hand-built monitor tables (outcomes, censored SLA breaches, missed incidents, warm-up window, time-weighted utilization, CIs) |
+| Metrics and parameters (`R/metrics.R`, `R/validate.R`) | 13/13 tests pass: 11 on hand-built monitor tables (outcomes, censored SLA breaches, missed incidents, warm-up window, time-weighted utilization, CIs) and 2 on parameter validation |
 | Analytic check | Runs; all scenarios stable (utilization < 1) |
-| Simulation (`R/model.R`, scripts 01–02) | Runs (about a minute). Agrees with the analytic check: utilization 69.4% / 69.8% vs. 69% / 70%; tier-2 wait 33.9 min (CI 30.6–37.3) vs. 36.0; baseline tier-1 wait 5.2 min (weighted across severities) vs. 4.7. The tier-1 wait is slightly higher, not lower as expected beforehand, but well within the same ballpark; a several-fold gap would have pointed to a bug |
+| Simulation (`R/model.R`, scripts 01–02) | Runs (about a minute). Agrees with the analytic check: utilization 69.4% / 69.8% vs. 69% / 70%; tier-2 wait 33.9 min (CI 30.6–37.3) vs. 36.0; baseline tier-1 wait 5.2 min (weighted across severities) vs. 4.7. The simulated tier-1 wait is higher because of priorities: high-severity alerts go first and take the longest to triage (13 minutes on average vs. 6 for low), and serving long jobs first raises the average wait. A one-off run with priorities switched off gave 4.8 minutes, matching the formula |
 | Stress test (script 03) | Runs (about 2.5 minutes). Behaves as queueing theory predicts: every option breaks below the capacity computed from first principles, and the tier that breaks first is the one with less spare capacity |
 
 Improvements over the original coursework (direct balking and reneging measurement, independent replications) are documented in [CHANGELOG.md](CHANGELOG.md).
@@ -145,7 +150,7 @@ Improvements over the original coursework (direct balking and reneging measureme
 
 ### Install
 
-Missing packages are installed automatically the first time you run the scripts; an interactive R session (RStudio, VS Code) asks first. The list lives in [`r-packages.txt`](r-packages.txt). To install everything up front instead:
+The packages are listed in [`r-packages.txt`](r-packages.txt). Nothing is installed automatically: if one is missing, the scripts stop and print the command to install it. To install everything up front:
 
 ```r
 install.packages(c("simmer", "ggplot2"))
@@ -160,17 +165,18 @@ Rscript run_all.R              # analytic check + simulation + report
 
 ### Output
 
-About 3.5 minutes. `run_all.R` writes the scenario comparison, the stress test and all figures to `docs/results.md`; per-replication and stress-test tables go to `outputs/` (git-ignored). If you decline the package install, `run_all.R` stops before running anything.
+About 3.5 minutes. `run_all.R` writes the scenario comparison, the stress test and all figures to `docs/results.md`; per-replication and stress-test tables go to `outputs/` (git-ignored). If a package is missing, `run_all.R` stops before running anything.
 
 ## Repository structure
 
 ```
 soc-alert-triage-simulation/
 ├── run_all.R                    # analytic check, simulation, report
-├── r-packages.txt               # R packages (installed automatically if missing)
+├── r-packages.txt               # R packages used
 ├── R/
-│   ├── check_packages.R         # installs missing packages from r-packages.txt
+│   ├── check_packages.R         # stops with install instructions if a package is missing
 │   ├── params.R                 # all parameters, scenarios and stress-test settings
+│   ├── validate.R               # parameter checks run before every simulation
 │   ├── model.R                  # simmer trajectories (one env per replication)
 │   ├── metrics.R                # monitor tables → per-alert outcomes → metrics + CIs
 │   └── report.R                 # markdown report helpers
@@ -179,7 +185,7 @@ soc-alert-triage-simulation/
 │   ├── 01_simulate.R            # 5 scenarios x 100 replications
 │   ├── 02_analyze.R             # tables + figures
 │   └── 03_stress_test.R         # alert-rate sweep x 4 staffing options
-├── tests/test_metrics.R         # 11 checks on hand-built monitor tables
+├── tests/test_metrics.R         # 13 checks: metrics on hand-built monitor tables, parameter validation
 └── docs/results.md              # generated
 ```
 

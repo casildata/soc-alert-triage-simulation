@@ -68,4 +68,16 @@ check(isTRUE(all.equal(m$sla_breach_high, 1)), "high SLA breach share")
 
 s <- summarise_metrics(data.frame(replication = 1:4, x = c(1, 2, 3, 4)))
 check(isTRUE(all.equal(s$mean, 2.5)) && s$lower < 2.5 && s$upper > 2.5, "CI brackets the mean")
+
+# Parameter validation
+source("R/validate.R")
+check(all(vapply(SCENARIOS, function(sc) isTRUE(validate_params(sc)), logical(1))),
+      "every scenario in R/params.R passes validation")
+rejects <- function(...) inherits(try(validate_params(modifyList(baseline, list(...))), silent = TRUE),
+                                  "try-error")
+check(rejects(severity_mix = c(high = 0.2, medium = 0.3, low = 0.6)) &&
+        rejects(triage_time = list(high = c(10, 5, 25))) &&
+        rejects(true_positive_rate = c(high = 1.5, medium = 0.2, low = 0.05)) &&
+        rejects(tier2_analysts = 0),
+      "invalid parameters are rejected")
 cat("\nAll metric tests passed\n")

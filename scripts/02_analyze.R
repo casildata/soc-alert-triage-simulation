@@ -38,10 +38,11 @@ show <- c(
 is_share <- c("sla_breach_high", "sla_breach_medium", "low_auto_closed", "low_expired",
               "util_tier1", "util_tier2")
 fmt_cell <- function(row) {
+  lower <- max(row$lower, 0)   # a t-interval on a share near zero can dip below it
   if (row$metric %in% is_share) {
-    sprintf("%.1f%% (%.1f–%.1f)", 100 * row$mean, 100 * row$lower, 100 * row$upper)
+    sprintf("%.1f%% (%.1f–%.1f)", 100 * row$mean, 100 * lower, 100 * row$upper)
   } else {
-    sprintf("%.1f (%.1f–%.1f)", row$mean, row$lower, row$upper)
+    sprintf("%.1f (%.1f–%.1f)", row$mean, lower, row$upper)
   }
 }
 cmp <- data.frame(metric = unname(show))
@@ -51,13 +52,15 @@ for (nm in names(sim_results)) {
 }
 
 # ---- Figure 1: scenario comparison -----------------------------------------------
-plot_metrics <- c(sla_breach_high = "High-severity SLA breaches",
-                  sla_breach_medium = "Medium-severity SLA breaches",
-                  low_auto_closed = "Low alerts auto-closed",
-                  missed_incidents_per_week = "Real incidents missed per week")
+# The metrics that differ between scenarios at the baseline load; SLA breaches and missed
+# incidents are near zero here and are shown in the stress test instead.
+plot_metrics <- c(investigation_wait = "Wait for tier-2, confirmed incident (min)",
+                  wait_high = "Wait to triage, high severity (min)",
+                  util_tier1 = "Tier-1 utilization (%)",
+                  util_tier2 = "Tier-2 utilization (%)")
 fig_df <- summary_long[summary_long$metric %in% names(plot_metrics), ]
 fig_df$panel <- factor(plot_metrics[fig_df$metric], levels = plot_metrics)
-pct_panel <- fig_df$metric != "missed_incidents_per_week"
+pct_panel <- fig_df$metric %in% c("util_tier1", "util_tier2")
 fig_df[pct_panel, c("mean", "lower", "upper")] <- 100 * fig_df[pct_panel, c("mean", "lower", "upper")]
 fig_df$scenario <- factor(fig_df$scenario, levels = rev(names(sim_results)))
 p_cmp <- ggplot(fig_df, aes(mean, scenario)) +
@@ -66,7 +69,7 @@ p_cmp <- ggplot(fig_df, aes(mean, scenario)) +
                 orientation = "y") +
   facet_wrap(~panel, scales = "free_x", ncol = 2) +
   labs(title = "Staffing and process scenarios",
-       subtitle = sprintf("Mean of %d replications x %d days, 95%% CI. Percentages except the last panel.",
+       subtitle = sprintf("Mean of %d replications x %d days, 95%% CI.",
                           SIM$replications, SIM$days),
        x = NULL, y = NULL) +
   theme_minimal(base_size = 11)

@@ -2,8 +2,9 @@
 # Treats each tier as an M/G/c queue and uses the Allen-Cunneen approximation
 #   Wq ≈ ErlangC_Wq(M/M/c) × (Ca² + Cs²) / 2
 # It ignores priorities, auto-closing and expiry, so it is a ballpark for the average
-# tier-1 wait (the simulation should come in somewhat lower, since dropped and expired
-# alerts free up capacity) and a check that every scenario is stable (utilization < 1).
+# tier-1 wait and a check that every scenario is stable (utilization < 1). The simulated
+# tier-1 wait comes in higher because priority goes to high-severity alerts, which take the
+# longest to triage, and serving long jobs first raises the average wait.
 
 erlang_c_wait <- function(lambda, mean_service, c) {
   a <- lambda * mean_service           # offered load (Erlangs)
