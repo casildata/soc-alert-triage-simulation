@@ -22,11 +22,33 @@ validate_params <- function(p) {
     fail("true_positive_rate must be between 0 and 1 for high, medium and low")
   }
   if (!(p$alerts_per_hour > 0)) fail("alerts_per_hour must be positive")
+  if (!isTRUE(p$priorities) && !isFALSE(p$priorities)) fail("priorities must be TRUE or FALSE")
+  if (length(p$hourly_profile) != 24 || any(!is.finite(p$hourly_profile)) ||
+      any(p$hourly_profile < 0) || !(sum(p$hourly_profile) > 0)) {
+    fail("hourly_profile needs 24 non-negative values, not all zero")
+  }
+  if (!(p$fp_suppression >= 0) || p$fp_suppression > min(1 - tp)) {
+    fail("fp_suppression must be between 0 and the false-positive share of every severity")
+  }
   if (!(p$investigation_mean > 0) || !(p$investigation_shape > 0)) {
     fail("investigation_mean and investigation_shape must be positive")
   }
-  if (!whole(p$tier1_analysts) || !whole(p$tier2_analysts)) {
-    fail("tier1_analysts and tier2_analysts must be whole numbers of at least 1")
+  shifts <- p$shift_start
+  if (length(shifts) < 1 || shifts[1] != 0 || any(diff(shifts) <= 0) || any(shifts >= 24)) {
+    fail("shift_start must be increasing hours of the day starting at 0")
+  }
+  for (k in c("tier1_analysts", "tier2_analysts")) {
+    x <- p[[k]]
+    if (!(length(x) %in% c(1, length(shifts))) || !all(vapply(x, whole, logical(1)))) {
+      fail(sprintf("%s must be one whole number of at least 1, or one per shift", k))
+    }
+  }
+  if (!is.null(p$flood)) {
+    f <- p$flood
+    if (!(f$rate >= 0) || !(f$minutes > 0) || !(f$plant_at >= 0 && f$plant_at < f$minutes) ||
+        !(f$start >= 0)) {
+      fail("flood needs a rate of at least 0, a positive length, a start time, and plant_at within the flood")
+    }
   }
   if (!whole(p$balk_queue_length)) fail("balk_queue_length must be a whole number of at least 1")
   if (length(p$low_expiry) != 2 || p$low_expiry[1] < 0 || p$low_expiry[1] > p$low_expiry[2]) {

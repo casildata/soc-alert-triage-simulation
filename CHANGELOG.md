@@ -23,6 +23,11 @@ materials are not included; the model was rewritten from scratch.
 - Explained why the simulated tier-1 wait is above the M/G/c estimate (priority to the longest jobs), and that an extra tier-1 analyst raises tier-2 waits.
 - Corrected the seeds note: shared seeds per replication, not common random numbers.
 - Parameter validation before every run, with tests; no automatic package installs; CI lower bounds clipped at zero.
+- Daily alert cycle (non-homogeneous Poisson arrivals), shift schedules and an alert-flood scenario with a planted real alert (`scripts/04_daily_cycle.R`).
+- Common random numbers: every alert's random inputs are drawn before the run, so staffing options see the same alerts; paired differences against the baseline. Detection tuning now removes false positives from the same alert stream.
+- Queues drain after the last arrival, so tier-2 waits are no longer censored (the old cool-down window is gone); utilization is measured over the measurement window, with shift capacity.
+- P90 waits; stress-test breaking points at 95% confidence as well as on the mean; the no-priority check against the analytic tier-1 wait is generated in the report.
+- `testthat` suite with model tests, `renv.lock`, and CI (tests, pipeline, results check, R 4.1, gitleaks).
 
 **Not included**
 - Course-provided materials and the standalone homework problems.

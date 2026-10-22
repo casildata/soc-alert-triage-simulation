@@ -2,7 +2,7 @@
 # Works on plain data frames, so it can be tested without running a simulation.
 
 ATTRIBUTE_KEYS <- c("severity", "true_positive", "dropped", "expired", "triage_start",
-                    "escalated_at", "investigation_start")
+                    "escalated_at", "investigation_start", "planted")
 
 # arrivals:   get_mon_arrivals(envs, ongoing = TRUE)
 #             columns name, start_time, end_time, activity_time, finished, replication
@@ -16,21 +16,23 @@ alert_table <- function(arrivals, attributes, p, sim = SIM) {
 
   a <- merge(arrivals[, c("replication", "name", "start_time", "end_time")], wide,
              by = c("replication", "name"), all.x = TRUE)
-  # Measurement window: after warm-up, and early enough that the outcome is known
-  a <- a[a$start_time >= sim$warmup & a$start_time <= sim$horizon - sim$cooldown, ]
+  # Measurement window: after warm-up and before arrivals stop (the queues drain after that)
+  a <- a[a$start_time >= sim$warmup & a$start_time < sim$horizon, ]
 
   a$severity <- factor(SEVERITY[as.character(a$severity)], levels = c("high", "medium", "low"))
   a$dropped <- !is.na(a$dropped) & a$dropped == 1
   a$expired <- !is.na(a$expired) & a$expired == 1
   a$true_positive <- !is.na(a$true_positive) & a$true_positive == 1
+  a$planted <- !is.na(a$planted) & a$planted == 1
   a$triaged <- !is.na(a$triage_start)
   a$outcome <- ifelse(a$dropped, "auto-closed (backlog)",
                       ifelse(a$expired, "expired unreviewed",
                              ifelse(a$triaged, "triaged", "still waiting")))
   a$triage_wait <- a$triage_start - a$start_time
   sla <- p$triage_sla[as.character(a$severity)]
-  # Not yet triaged at the end of the run: a breach if it has already waited past the SLA,
-  # otherwise unknown. Auto-closed and expired alerts never got triaged: a breach.
+  # Auto-closed and expired alerts never got triaged: a breach. The model drains its queues,
+  # so "still waiting" only happens in a run that was cut short: then it is a breach if it
+  # has already waited past the SLA, and otherwise unknown.
   waited_so_far <- sim$horizon - a$start_time
   a$sla_breach <- ifelse(a$triaged, a$triage_wait > sla,
                          ifelse(a$outcome == "still waiting",
@@ -40,28 +42,32 @@ alert_table <- function(arrivals, attributes, p, sim = SIM) {
   a
 }
 
-# Busy-time utilization from the resource monitor (server count is a step function)
+# Busy time over available analyst time in the measurement window, from the resource
+# monitor (server count and capacity are step functions; capacity changes with shifts)
 utilization <- function(resources, sim = SIM) {
   per_rep <- lapply(split(resources, list(resources$replication, resources$resource), drop = TRUE),
                     function(r) {
     r <- r[order(r$time), ]
-    t <- c(r$time, sim$horizon)
-    busy <- sum(r$server * diff(t))
+    from <- pmax(r$time, sim$warmup)
+    to <- pmin(c(r$time[-1], Inf), sim$horizon)
+    dt <- pmax(to - from, 0)
     data.frame(replication = r$replication[1], resource = r$resource[1],
-               utilization = busy / (r$capacity[1] * sim$horizon))
+               utilization = sum(r$server * dt) / sum(r$capacity * dt))
   })
   do.call(rbind, per_rep)
 }
 
 # Per-replication metrics; the scenario estimate is the mean across replications.
 replication_metrics <- function(a, util, sim = SIM) {
-  window_days <- (sim$horizon - sim$cooldown - sim$warmup) / (24 * 60)
+  window_days <- (sim$horizon - sim$warmup) / (24 * 60)
+  p90 <- function(x) if (any(!is.na(x))) unname(quantile(x, 0.9, na.rm = TRUE)) else NA_real_
   per_rep <- lapply(split(a, a$replication), function(d) {
     hi <- d$severity == "high"; md <- d$severity == "medium"; lo <- d$severity == "low"
     data.frame(
       replication = d$replication[1],
       alerts_per_day = nrow(d) / window_days,
       wait_high = mean(d$triage_wait[hi], na.rm = TRUE),
+      wait_high_p90 = p90(d$triage_wait[hi]),
       wait_medium = mean(d$triage_wait[md], na.rm = TRUE),
       wait_low = mean(d$triage_wait[lo], na.rm = TRUE),
       sla_breach_high = mean(d$sla_breach[hi], na.rm = TRUE),
@@ -69,6 +75,7 @@ replication_metrics <- function(a, util, sim = SIM) {
       low_auto_closed = mean(d$dropped[lo]),
       low_expired = mean(d$expired[lo]),
       investigation_wait = mean(d$investigation_wait, na.rm = TRUE),
+      investigation_wait_p90 = p90(d$investigation_wait),
       missed_incidents_per_week = sum(d$missed_incident) / window_days * 7
     )
   })

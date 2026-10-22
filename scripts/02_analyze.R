@@ -26,12 +26,14 @@ write.csv(summary_long, "outputs/scenario_summary.csv", row.names = FALSE)
 # ---- Comparison table ---------------------------------------------------------------
 show <- c(
   wait_high = "Mean wait to triage, high (min)",
+  wait_high_p90 = "P90 wait to triage, high (min)",
   sla_breach_high = "High alerts missing 15-min SLA",
   sla_breach_medium = "Medium alerts missing 60-min SLA",
   low_auto_closed = "Low alerts auto-closed (backlog)",
   low_expired = "Low alerts expired unreviewed",
   missed_incidents_per_week = "Real incidents missed / week",
   investigation_wait = "Wait for tier-2 (min)",
+  investigation_wait_p90 = "P90 wait for tier-2 (min)",
   util_tier1 = "Tier-1 utilization",
   util_tier2 = "Tier-2 utilization"
 )
@@ -50,6 +52,34 @@ for (nm in names(sim_results)) {
   s <- summary_long[summary_long$scenario == nm, ]
   cmp[[nm]] <- vapply(names(show), function(k) fmt_cell(s[s$metric == k, ]), "")
 }
+
+# ---- Paired differences: every scenario sees the same alerts (common random numbers) ---
+by_rep <- function(m, metric) m[[metric]][order(m$replication)]
+paired <- do.call(rbind, lapply(names(sim_results)[-1], function(nm) {
+  d <- by_rep(rep_metrics[[nm]], "investigation_wait") - by_rep(rep_metrics[[1]], "investigation_wait")
+  ci <- summarise_metrics(data.frame(replication = seq_along(d), d = d))
+  data.frame(scenario = nm, change = sprintf("%+.2f (%+.2f to %+.2f)", ci$mean, ci$lower, ci$upper))
+}))
+names(paired) <- c("scenario", "change in tier-2 wait vs. baseline, min (paired 95% CI)")
+
+# ---- Check against the analytic tier-1 wait: the baseline without priorities ----------
+tier1_wait <- function(a) {
+  w <- tapply(a$triage_wait, a$replication, mean, na.rm = TRUE)
+  s <- summarise_metrics(data.frame(replication = seq_along(w), wait = as.numeric(w)))
+  sprintf("%.2f (%.2f–%.2f)", s$mean, s$lower, s$upper)
+}
+message("  simulating: baseline without priorities")
+fcfs <- modifyList(baseline, list(name = "Baseline, no priorities", priorities = FALSE))
+fcfs_envs <- run_scenario(fcfs)
+priority_check <- data.frame(
+  model = c("Simulation, priorities (as modeled)", "Simulation, first come first served",
+            "M/G/c analytic check (no priorities)"),
+  wait = c(tier1_wait(alerts[[1]]),
+           tier1_wait(alert_table(get_mon_arrivals(fcfs_envs, ongoing = TRUE),
+                                  get_mon_attributes(fcfs_envs), fcfs)),
+           sprintf("%.2f", analytic$tier1_mean_wait_min[1]))
+)
+names(priority_check) <- c("baseline", "mean wait to triage, all severities (min, 95% CI)")
 
 # ---- Figure 1: scenario comparison -----------------------------------------------
 # The metrics that differ between scenarios at the baseline load; SLA breaches and missed
@@ -113,6 +143,12 @@ report_add("## 1. Scenario comparison\n\n",
                    SIM$replications, SIM$days),
            "Cells: mean (95% CI across replications).\n\n",
            paste(md_table(cmp), collapse = "\n"), "\n\n",
+           "Replication *i* sees the same alerts in every scenario, so differences can be measured ",
+           "replication by replication:\n\n",
+           paste(md_table(paired), collapse = "\n"), "\n\n",
+           "Tier-1 wait against the analytic check. Priority goes to high-severity alerts, which take ",
+           "the longest to triage; serving long jobs first raises the average wait:\n\n",
+           paste(md_table(priority_check), collapse = "\n"), "\n\n",
            "![Scenario comparison](figures/scenario_comparison.png)\n\n",
            "## 2. Baseline detail\n\n",
            "Alert outcomes in the measurement window (all replications):\n\n",

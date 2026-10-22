@@ -15,7 +15,8 @@ message("==> scripts/00_queueing_check.R")
 source("scripts/00_queueing_check.R")
 
 source("R/model.R")
-for (s in c("scripts/01_simulate.R", "scripts/02_analyze.R", "scripts/03_stress_test.R")) {
+for (s in c("scripts/01_simulate.R", "scripts/02_analyze.R", "scripts/03_stress_test.R",
+            "scripts/04_daily_cycle.R")) {
   message("==> ", s)
   source(s, echo = FALSE)
 }

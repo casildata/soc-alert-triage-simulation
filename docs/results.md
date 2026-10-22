@@ -11,7 +11,7 @@ Ignores priorities, auto-closing and expiry. Waits are in minutes.
 | Baseline | 0.69 | 4.69 | 0.70 | 36.03 | 33.60 |
 | +1 tier-1 analyst | 0.46 | 0.62 | 0.70 | 36.03 | 33.60 |
 | +1 tier-2 analyst | 0.69 | 4.69 | 0.47 | 4.74 | 33.60 |
-| Detection tuning (-25% alerts) | 0.52 | 1.87 | 0.70 | 36.03 | 33.60 |
+| Detection tuning (-25% alerts) | 0.69 | 4.69 | 0.70 | 36.03 | 33.60 |
 | SOAR enrichment (low triage 2x faster) | 0.54 | 2.00 | 0.70 | 36.03 | 33.60 |
 
 ## 1. Scenario comparison
@@ -20,15 +20,34 @@ Ignores priorities, auto-closing and expiry. Waits are in minutes.
 
 | metric | Baseline | +1 tier-1 analyst | +1 tier-2 analyst | Detection tuning (-25% alerts) | SOAR enrichment (low triage 2x faster) |
 |---|---|---|---|---|---|
-| Mean wait to triage, high (min) | 1.8 (1.8–1.9) | 0.4 (0.4–0.5) | 1.8 (1.7–1.8) | 1.1 (1.1–1.2) | 1.1 (1.0–1.1) |
-| High alerts missing 15-min SLA | 0.1% (0.1–0.2) | 0.0% (0.0–0.0) | 0.1% (0.0–0.2) | 0.1% (0.0–0.2) | 0.1% (0.0–0.1) |
+| Mean wait to triage, high (min) | 1.8 (1.8–1.9) | 0.5 (0.4–0.5) | 1.8 (1.8–1.9) | 1.1 (1.1–1.2) | 1.1 (1.1–1.2) |
+| P90 wait to triage, high (min) | 5.3 (5.1–5.4) | 1.7 (1.5–1.8) | 5.3 (5.1–5.4) | 4.0 (3.8–4.2) | 3.8 (3.6–4.0) |
+| High alerts missing 15-min SLA | 0.1% (0.0–0.2) | 0.0% (0.0–0.0) | 0.1% (0.0–0.2) | 0.0% (0.0–0.1) | 0.1% (0.0–0.2) |
 | Medium alerts missing 60-min SLA | 0.0% (0.0–0.0) | 0.0% (0.0–0.0) | 0.0% (0.0–0.0) | 0.0% (0.0–0.0) | 0.0% (0.0–0.0) |
 | Low alerts auto-closed (backlog) | 0.0% (0.0–0.0) | 0.0% (0.0–0.0) | 0.0% (0.0–0.0) | 0.0% (0.0–0.0) | 0.0% (0.0–0.0) |
 | Low alerts expired unreviewed | 0.2% (0.1–0.3) | 0.0% (0.0–0.0) | 0.2% (0.1–0.3) | 0.0% (0.0–0.0) | 0.1% (0.0–0.1) |
-| Real incidents missed / week | 0.1 (0.0–0.3) | 0.0 (0.0–0.0) | 0.1 (0.0–0.2) | 0.0 (0.0–0.0) | 0.1 (0.0–0.1) |
-| Wait for tier-2 (min) | 33.9 (30.6–37.3) | 35.5 (32.1–38.8) | 4.4 (3.9–5.0) | 34.8 (31.3–38.3) | 33.8 (30.1–37.5) |
-| Tier-1 utilization | 69.4% (69.0–69.8) | 46.4% (46.2–46.7) | 69.3% (68.9–69.7) | 51.5% (51.1–51.9) | 53.4% (53.0–53.8) |
-| Tier-2 utilization | 69.8% (68.7–71.0) | 69.9% (68.6–71.2) | 46.5% (45.7–47.4) | 68.9% (67.7–70.0) | 69.2% (68.1–70.4) |
+| Real incidents missed / week | 0.1 (0.0–0.2) | 0.0 (0.0–0.0) | 0.1 (0.0–0.2) | 0.0 (0.0–0.0) | 0.0 (0.0–0.1) |
+| Wait for tier-2 (min) | 34.5 (30.5–38.5) | 35.2 (31.2–39.2) | 4.4 (3.9–4.9) | 35.0 (31.0–39.0) | 34.9 (30.9–38.9) |
+| P90 wait for tier-2 (min) | 97.0 (85.7–108.2) | 98.7 (87.5–109.9) | 13.6 (11.9–15.3) | 97.9 (86.5–109.3) | 97.8 (86.5–109.0) |
+| Tier-1 utilization | 69.6% (69.2–70.1) | 46.5% (46.2–46.8) | 69.6% (69.2–70.1) | 52.2% (51.8–52.6) | 53.9% (53.5–54.3) |
+| Tier-2 utilization | 69.8% (68.5–71.1) | 69.8% (68.5–71.2) | 46.5% (45.6–47.4) | 69.8% (68.5–71.2) | 69.8% (68.5–71.2) |
+
+Replication *i* sees the same alerts in every scenario, so differences can be measured replication by replication:
+
+| scenario | change in tier-2 wait vs. baseline, min (paired 95% CI) |
+|---|---|
+| +1 tier-1 analyst | +0.69 (+0.38 to +0.99) |
+| +1 tier-2 analyst | -30.11 (-33.70 to -26.52) |
+| Detection tuning (-25% alerts) | +0.46 (+0.17 to +0.75) |
+| SOAR enrichment (low triage 2x faster) | +0.39 (+0.16 to +0.62) |
+
+Tier-1 wait against the analytic check. Priority goes to high-severity alerts, which take the longest to triage; serving long jobs first raises the average wait:
+
+| baseline | mean wait to triage, all severities (min, 95% CI) |
+|---|---|
+| Simulation, priorities (as modeled) | 5.39 (5.18–5.61) |
+| Simulation, first come first served | 4.88 (4.67–5.08) |
+| M/G/c analytic check (no priorities) | 4.69 |
 
 ![Scenario comparison](figures/scenario_comparison.png)
 
@@ -38,9 +57,9 @@ Alert outcomes in the measurement window (all replications):
 
 | severity | auto-closed (backlog) | expired unreviewed | triaged |
 |---|---|---|---|
-| high | 0 | 0 | 9,124 |
-| medium | 0 | 0 | 27,585 |
-| low | 9 | 104 | 55,774 |
+| high | 0 | 0 | 9,730 |
+| medium | 0 | 0 | 29,012 |
+| low | 9 | 127 | 57,503 |
 
 ![Triage wait](figures/baseline_triage_wait.png)
 
@@ -50,16 +69,16 @@ Alert outcomes in the measurement window (all replications):
 
 Alert rate swept from 10 to 22 per hour for four staffing options (30 replications x 5 days per point). Everything else stays at the baseline values. Targets: at most 5% of high-severity alerts triaged late, at most 1 real incident missed per week, and a tier-2 wait of at most 60 min.
 
-Capacity if no alert were dropped: each tier-1 analyst triages 7.2 alerts/hour (8.3 min per alert on average); each tier-2 analyst keeps up with 7.1 alerts/hour (14% of alerts are real incidents, 60 min each). Past tier-2 capacity its queue grows without limit, so the waits reported there depend on run length.
+Capacity if no alert were dropped: each tier-1 analyst triages 7.2 alerts/hour (8.3 min per alert on average); each tier-2 analyst keeps up with 7.1 alerts/hour (14% of alerts are real incidents, 60 min each). Past tier-2 capacity its queue grows without limit, so the waits reported there depend on run length. "At 95% confidence" requires the upper end of each 95% CI to meet every target.
 
 ### Breaking points
 
-| staffing (tier-1 + tier-2) | capacity, alerts/hour (tier-1 / tier-2) | highest rate meeting all targets | first rate that fails | targets missed there |
-|---|---|---|---|---|
-| 2 + 2 (baseline) | 14.4 / 14.3 | 10 | 12 | > 1 real incident missed / week; tier-2 wait > 60 min |
-| 3 + 2 (+1 tier-1) | 21.6 / 14.3 | 10 | 12 | tier-2 wait > 60 min |
-| 2 + 3 (+1 tier-2) | 14.4 / 21.4 | 12 | 14 | > 1 real incident missed / week |
-| 3 + 3 (+1 each) | 21.6 / 21.4 | 18 | 20 | > 1 real incident missed / week; tier-2 wait > 60 min |
+| staffing (tier-1 + tier-2) | capacity, alerts/hour (tier-1 / tier-2) | highest rate meeting all targets (mean) | same, at 95% confidence | first rate that fails (mean) | targets missed there |
+|---|---|---|---|---|---|
+| 2 + 2 (baseline) | 14.4 / 14.3 | 10 | 10 | 12 | tier-2 wait > 60 min |
+| 3 + 2 (+1 tier-1) | 21.6 / 14.3 | 10 | 10 | 12 | tier-2 wait > 60 min |
+| 2 + 3 (+1 tier-2) | 14.4 / 21.4 | 12 | 10 | 14 | > 1 real incident missed / week |
+| 3 + 3 (+1 each) | 21.6 / 21.4 | 18 | 16 | 20 | > 1 real incident missed / week; tier-2 wait > 60 min |
 
 ![Stress test](figures/stress_test.png)
 
@@ -67,35 +86,61 @@ Capacity if no alert were dropped: each tier-1 analyst triages 7.2 alerts/hour (
 
 | staffing | 10 | 12 | 14 | 16 | 18 | 20 | 22 |
 |---|---|---|---|---|---|---|---|
-| 2 + 2 (baseline) | 0.2 | 1.0 | 5.7 | 21.4 | 39.7 | 59.7 | 81.3 |
-| 3 + 2 (+1 tier-1) | 0.0 | 0.0 | 0.0 | 0.0 | 0.7 | 4.5 | 14.7 |
-| 2 + 3 (+1 tier-2) | 0.2 | 0.9 | 7.5 | 20.1 | 39.3 | 61.3 | 85.5 |
-| 3 + 3 (+1 each) | 0.0 | 0.0 | 0.0 | 0.2 | 0.5 | 4.1 | 12.2 |
+| 2 + 2 (baseline) | 0.1 | 0.9 | 6.6 | 20.0 | 42.5 | 60.8 | 82.0 |
+| 3 + 2 (+1 tier-1) | 0.0 | 0.0 | 0.1 | 0.1 | 0.8 | 4.4 | 14.9 |
+| 2 + 3 (+1 tier-2) | 0.1 | 0.9 | 6.6 | 20.0 | 42.5 | 60.8 | 82.0 |
+| 3 + 3 (+1 each) | 0.0 | 0.0 | 0.1 | 0.1 | 0.8 | 4.4 | 14.9 |
 
 ### Tier-2 wait for a confirmed incident (min)
 
 | staffing | 10 | 12 | 14 | 16 | 18 | 20 | 22 |
 |---|---|---|---|---|---|---|---|
-| 2 + 2 (baseline) | 33.6 | 70.1 | 161.2 | 243.0 | 284.2 | 489.2 | 703.5 |
-| 3 + 2 (+1 tier-1) | 37.0 | 100.2 | 179.0 | 275.6 | 292.4 | 441.3 | 703.9 |
-| 2 + 3 (+1 tier-2) | 4.8 | 8.3 | 13.3 | 17.3 | 22.4 | 38.1 | 55.9 |
-| 3 + 3 (+1 each) | 5.5 | 8.5 | 15.9 | 24.3 | 51.2 | 97.6 | 183.1 |
+| 2 + 2 (baseline) | 32.0 | 94.3 | 147.3 | 336.6 | 643.6 | 879.1 | 1177.1 |
+| 3 + 2 (+1 tier-1) | 32.9 | 99.1 | 176.6 | 530.8 | 1053.2 | 1427.9 | 1820.1 |
+| 2 + 3 (+1 tier-2) | 4.2 | 10.5 | 10.3 | 15.1 | 26.3 | 32.3 | 46.1 |
+| 3 + 3 (+1 each) | 4.6 | 11.4 | 12.3 | 24.2 | 56.5 | 89.6 | 188.9 |
 
 ### High-severity alerts triaged late
 
 | staffing | 10 | 12 | 14 | 16 | 18 | 20 | 22 |
 |---|---|---|---|---|---|---|---|
-| 2 + 2 (baseline) | 0.0% | 0.4% | 0.2% | 0.6% | 0.9% | 1.6% | 1.5% |
-| 3 + 2 (+1 tier-1) | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
-| 2 + 3 (+1 tier-2) | 0.1% | 0.4% | 0.4% | 0.7% | 0.8% | 0.9% | 1.1% |
-| 3 + 3 (+1 each) | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% |
+| 2 + 2 (baseline) | 0.2% | 0.3% | 0.5% | 0.3% | 0.8% | 0.7% | 1.4% |
+| 3 + 2 (+1 tier-1) | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.1% |
+| 2 + 3 (+1 tier-2) | 0.2% | 0.3% | 0.5% | 0.3% | 0.8% | 0.7% | 1.4% |
+| 3 + 3 (+1 each) | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.0% | 0.1% |
 
 ### Low-severity alerts never reviewed (auto-closed or expired)
 
 | staffing | 10 | 12 | 14 | 16 | 18 | 20 | 22 |
 |---|---|---|---|---|---|---|---|
-| 2 + 2 (baseline) | 0.2% | 1.8% | 8.8% | 25.8% | 44.9% | 62.2% | 75.7% |
-| 3 + 2 (+1 tier-1) | 0.0% | 0.0% | 0.0% | 0.1% | 1.0% | 4.0% | 12.6% |
-| 2 + 3 (+1 tier-2) | 0.2% | 1.7% | 9.7% | 25.9% | 44.6% | 62.1% | 75.4% |
-| 3 + 3 (+1 each) | 0.0% | 0.0% | 0.0% | 0.2% | 0.9% | 4.3% | 11.8% |
+| 2 + 2 (baseline) | 0.3% | 1.9% | 9.8% | 24.8% | 45.6% | 61.9% | 75.9% |
+| 3 + 2 (+1 tier-1) | 0.0% | 0.0% | 0.0% | 0.1% | 1.1% | 4.3% | 11.9% |
+| 2 + 3 (+1 tier-2) | 0.3% | 1.9% | 9.8% | 24.8% | 45.6% | 61.9% | 75.9% |
+| 3 + 3 (+1 each) | 0.0% | 0.0% | 0.0% | 0.1% | 1.1% | 4.3% | 11.9% |
+
+## 4. Daily cycle, shifts and an alert flood
+
+Same average load as the baseline (10 alerts/hour), but following a daily profile: 5.0/hour at night, peaking at 15.9/hour in business hours. Shifts: night 00:00-07:00, day 07:00-17:00, evening 17:00-24:00; the same number of analysts in each tier. 50 replications x 5 days per option (first day discarded). FTE assumes 2,080 paid hours a year per person, before leave and training.
+
+| staffing (per tier: night / day / evening) | analyst-hours per day (both tiers) | approx. FTE | tier-2 wait, min | worst hour (tier-2 wait) | high alerts late | low alerts never reviewed | real incidents missed / week | meets all targets |
+|---|---|---|---|---|---|---|---|---|
+| 2 + 2 around the clock | 96 | 17 | 61 (P90 187) | 100 at 15:00 | 0.6% | 10.6% | 4.5 | no |
+| Shifts 1 / 3 / 2 | 102 | 18 | 26 (P90 73) | 54 at 03:00 | 0.8% | 0.4% | 0.2 | yes |
+| Shifts 2 / 3 / 2 | 116 | 20 | 20 (P90 56) | 50 at 17:00 | 0.0% | 0.1% | 0.1 | yes |
+| 3 + 3 around the clock | 144 | 25 | 12 (P90 39) | 22 at 15:00 | 0.0% | 0.1% | 0.0 | yes |
+
+![Daily cycle](figures/daily_cycle.png)
+
+### Alert flood
+
+On day 2, 20 extra low-severity false positives per hour arrive for 120 minutes, and one real low-severity alert (the intrusion the flood is meant to hide) arrives 60 minutes in. 100 replications per cell; "no flood" plants the same alert without the noise. Intervals are Wilson 95% intervals.
+
+| staffing | flood at 02:00 (night shift): real alert never reviewed (95% CI) | same alert, no flood | flood at 10:00 (day shift): real alert never reviewed (95% CI) | same alert, no flood |
+|---|---|---|---|---|
+| 2 + 2 around the clock | 3% (1–8) | 0% | 79% (70–86) | 29% |
+| Shifts 1 / 3 / 2 | 78% (69–85) | 1% | 26% (18–35) | 0% |
+| Shifts 2 / 3 / 2 | 3% (1–8) | 0% | 26% (18–35) | 0% |
+| 3 + 3 around the clock | 0% (0–4) | 0% | 26% (18–35) | 0% |
+
+![Alert flood](figures/alert_flood.png)
 

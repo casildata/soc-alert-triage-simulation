@@ -29,34 +29,44 @@ incidents_per_alert <- sum(baseline$severity_mix * baseline$true_positive_rate[s
 tier1_cap <- 60 / triage_min_per_alert                                   # alerts/hour per analyst
 tier2_cap <- 60 / (baseline$investigation_mean * incidents_per_alert)    # alerts/hour per analyst
 
-# ---- Breaking point: first rate at which any target is missed (on the mean) ---------
+# ---- Breaking point: first rate at which any target is missed -------------------------
+# On the mean, and at 95% confidence (the upper bound of the CI must meet every target)
 target_label <- c(
   sla_breach_high = sprintf("high-severity SLA breaches > %g%%", 100 * STRESS$targets[["sla_breach_high"]]),
   missed_incidents_per_week = sprintf("> %g real incident missed / week", STRESS$targets[["missed_incidents_per_week"]]),
   investigation_wait = sprintf("tier-2 wait > %g min", STRESS$targets[["investigation_wait"]])
 )
-value <- function(st, r, metric) {
-  stress$mean[stress$staffing == st & stress$rate == r & stress$metric == metric]
+value <- function(st, r, metric, col = "mean") {
+  stress[[col]][stress$staffing == st & stress$rate == r & stress$metric == metric]
+}
+targets_missed <- function(st, col) {
+  lapply(STRESS$alerts_per_hour, function(r) {
+    names(STRESS$targets)[vapply(names(STRESS$targets),
+                                 function(k) value(st, r, k, col) > STRESS$targets[[k]], logical(1))]
+  })
+}
+last_ok <- function(missed) {
+  fails <- which(lengths(missed) > 0)
+  if (length(fails) == 0) max(STRESS$alerts_per_hour)
+  else if (fails[1] == 1) NA else STRESS$alerts_per_hour[fails[1] - 1]
 }
 breaking <- do.call(rbind, lapply(names(STRESS$staffing), function(st) {
-  missed <- lapply(STRESS$alerts_per_hour, function(r) {
-    names(STRESS$targets)[vapply(names(STRESS$targets),
-                                 function(k) value(st, r, k) > STRESS$targets[[k]], logical(1))]
-  })
+  missed <- targets_missed(st, "mean")
   fails <- which(lengths(missed) > 0)
   staff <- STRESS$staffing[[st]]
   data.frame(
     staffing = st,
     capacity = sprintf("%.1f / %.1f", staff[1] * tier1_cap, staff[2] * tier2_cap),
-    last_ok = if (length(fails) == 0) max(STRESS$alerts_per_hour)
-              else if (fails[1] == 1) NA else STRESS$alerts_per_hour[fails[1] - 1],
+    last_ok = last_ok(missed),
+    last_ok_95 = last_ok(targets_missed(st, "upper")),
     first_fail = if (length(fails) == 0) NA else STRESS$alerts_per_hour[fails[1]],
     targets_missed = if (length(fails) == 0) "none in range"
                      else paste(target_label[missed[[fails[1]]]], collapse = "; ")
   )
 }))
 names(breaking) <- c("staffing (tier-1 + tier-2)", "capacity, alerts/hour (tier-1 / tier-2)",
-                     "highest rate meeting all targets", "first rate that fails", "targets missed there")
+                     "highest rate meeting all targets (mean)", "same, at 95% confidence",
+                     "first rate that fails (mean)", "targets missed there")
 
 # ---- Tables: one metric per table, staffing x alert rate ----------------------------
 rate_table <- function(metric, fmt) {
@@ -114,7 +124,8 @@ report_add(
           tier1_cap, triage_min_per_alert),
   sprintf("each tier-2 analyst keeps up with %.1f alerts/hour (%.0f%% of alerts are real incidents, %d min each). ",
           tier2_cap, 100 * incidents_per_alert, baseline$investigation_mean),
-  "Past tier-2 capacity its queue grows without limit, so the waits reported there depend on run length.\n\n",
+  "Past tier-2 capacity its queue grows without limit, so the waits reported there depend on run length. ",
+  "\"At 95% confidence\" requires the upper end of each 95% CI to meet every target.\n\n",
   "### Breaking points\n\n", paste(md_table(breaking), collapse = "\n"), "\n\n",
   "![Stress test](figures/stress_test.png)\n\n",
   "### Real incidents missed per week\n\n",
