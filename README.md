@@ -2,13 +2,13 @@
 
 **Discrete-event simulation of a two-tier Security Operations Center in R (`simmer`): how many analysts does it take to meet triage SLAs, when should they be on shift, and what does alert overload actually cost in missed incidents?**
 
-![pipeline](https://github.com/casildata/soc-alert-triage-simulation/actions/workflows/pipeline.yml/badge.svg)
+[![pipeline](https://github.com/casildata/soc-alert-triage-simulation/actions/workflows/pipeline.yml/badge.svg)](https://github.com/casildata/soc-alert-triage-simulation/actions/workflows/pipeline.yml)
 ![R](https://img.shields.io/badge/R-4.1%2B-276DC3?logo=r&logoColor=white)
 ![simmer](https://img.shields.io/badge/simulation-simmer%20(DES)-informational)
 ![Domain](https://img.shields.io/badge/domain-SOC%20Operations-critical)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-> **Origin:** built on discrete-event simulation methods from **ISQS 7339 Simulation & Optimization** at Texas Tech University (Spring 2022): queues with priorities, balking and reneging. The coursework modeled call centers and a clinic; this repository models alert triage.
+> **Origin:** built on discrete-event simulation methods from my graduate work in **Simulation & Optimization** at Texas Tech University (2022): queues with priorities, balking and reneging. The original models covered call centers and a clinic; this repository models alert triage.
 
 ---
 
@@ -17,7 +17,7 @@
 - **Tier-2 is the bottleneck.** At a steady 10 alerts/hour, one more tier-2 analyst cuts a confirmed incident's wait for an investigator from **34.5 to 4.4 minutes**. Detection tuning and SOAR enrichment don't help tier-2; they make it very slightly worse, because fewer real incidents are dropped before they get there.
 - **Staff for the peak, not the average.** With the same average load but a realistic daily cycle (5 alerts/hour at night, 16 in business hours), the 2 + 2 team that coped with a flat load misses **4.5 real incidents a week**. Moving the same people into shifts (1 at night, 3 by day, 2 in the evening, 6% more analyst-hours) meets every target.
 - **An attacker can use the gap.** If 2 hours of alert noise start at 02:00, the real alert hidden in it is **never reviewed 78% of the time** when one analyst covers nights, against 3% with two. A flood in the daytime peak buries it 26% of the time even with three analysts.
-- **Fixing one tier exposes the other.** In a stress test from 10 to 22 alerts/hour, +1 tier-2 breaks at 14/hour (tier-1 drops alerts and misses 6.6 real incidents a week). **One more analyst in each tier holds to 18/hour** (16 at 95% confidence).
+- **Fixing one tier exposes the other.** In a stress test from 10 to 22 alerts/hour, +1 tier-2 breaks at 14/hour (tier-1 drops alerts and misses 6.7 real incidents a week). **One more analyst in each tier holds to 18/hour** (16 at 95% confidence).
 - **Priority queuing hides the damage:** fewer than 2% of high-severity alerts are ever late, even at 22/hour. Overload falls on low-severity alerts (up to 76% never reviewed) and the real incidents among them.
 
 ![A day in the SOC: alerts by hour, analysts on duty, tier-2 wait and unreviewed alerts for four staffing options](docs/figures/daily_cycle.png)
@@ -158,7 +158,7 @@ The alert rate is swept from 10 to 22 per hour (flat) for four staffing options,
 |---|---|---|---|---|---|
 | 2 + 2 (baseline) | 14.4 / 14.3 | 10 | 10 | 12 | Tier-2 wait (94 min) |
 | 3 + 2 (+1 tier-1) | 21.6 / 14.3 | 10 | 10 | 12 | Tier-2 wait (99 min) |
-| 2 + 3 (+1 tier-2) | 14.4 / 21.4 | 12 | 10 | 14 | Missed incidents (6.6/week) |
+| 2 + 3 (+1 tier-2) | 14.4 / 21.4 | 12 | 10 | 14 | Missed incidents (6.7/week) |
 | 3 + 3 (+1 each) | 21.6 / 21.4 | **18** | 16 | 20 | Tier-2 wait (90 min) and missed incidents (4.4/week) |
 
 "Capacity" is the alert rate at which a tier would be 100% busy if no alert were dropped: 7.2 alerts/hour per tier-1 analyst (8.3 minutes of triage per alert on average) and 7.1 per tier-2 analyst (14% of alerts are real incidents, 60 minutes each).
@@ -209,7 +209,7 @@ What the model covers, mapped to [NIST CSF 2.0](https://www.nist.gov/cyberframew
 | Common random numbers | 2 + 2 and 2 + 3 produce identical tier-1 results at every stress-test rate, as they should (tier-1 doesn't depend on tier-2 staffing) |
 | CI ([`.github/workflows/pipeline.yml`](.github/workflows/pipeline.yml)) | On every push: tests, the full pipeline, and a check that `docs/results.md` is reproduced exactly; tests on R 4.1; secret scan (gitleaks) |
 
-Improvements over the original coursework are documented in [CHANGELOG.md](CHANGELOG.md).
+Improvements over the original 2022 version are documented in [CHANGELOG.md](CHANGELOG.md).
 
 ## Getting started
 

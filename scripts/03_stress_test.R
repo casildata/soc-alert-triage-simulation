@@ -56,7 +56,7 @@ breaking <- do.call(rbind, lapply(names(STRESS$staffing), function(st) {
   staff <- STRESS$staffing[[st]]
   data.frame(
     staffing = st,
-    capacity = sprintf("%.1f / %.1f", staff[1] * tier1_cap, staff[2] * tier2_cap),
+    capacity = sprintf("%.1f / %.1f", r1(staff[1] * tier1_cap), r1(staff[2] * tier2_cap)),
     last_ok = last_ok(missed),
     last_ok_95 = last_ok(targets_missed(st, "upper")),
     first_fail = if (length(fails) == 0) NA else STRESS$alerts_per_hour[fails[1]],
@@ -77,8 +77,8 @@ rate_table <- function(metric, fmt) {
   }
   out
 }
-pct <- function(x) sprintf("%.1f%%", 100 * x)
-num <- function(x) sprintf("%.1f", x)
+pct <- function(x) sprintf("%.1f%%", r1(100 * x))
+num <- function(x) sprintf("%.1f", r1(x))
 
 # ---- Figure ----------------------------------------------------------------------------
 panels <- c(sla_breach_high = "High alerts triaged late (%)",
@@ -121,9 +121,9 @@ report_add(
           100 * STRESS$targets[["sla_breach_high"]], STRESS$targets[["missed_incidents_per_week"]],
           STRESS$targets[["investigation_wait"]]),
   sprintf("Capacity if no alert were dropped: each tier-1 analyst triages %.1f alerts/hour (%.1f min per alert on average); ",
-          tier1_cap, triage_min_per_alert),
+          r1(tier1_cap), r1(triage_min_per_alert)),
   sprintf("each tier-2 analyst keeps up with %.1f alerts/hour (%.0f%% of alerts are real incidents, %d min each). ",
-          tier2_cap, 100 * incidents_per_alert, baseline$investigation_mean),
+          r1(tier2_cap), r0(100 * incidents_per_alert), baseline$investigation_mean),
   "Past tier-2 capacity its queue grows without limit, so the waits reported there depend on run length. ",
   "\"At 95% confidence\" requires the upper end of each 95% CI to meet every target.\n\n",
   "### Breaking points\n\n", paste(md_table(breaking), collapse = "\n"), "\n\n",

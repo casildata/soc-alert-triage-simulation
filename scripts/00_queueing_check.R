@@ -47,7 +47,7 @@ print(analytic)
 stopifnot(all(analytic$tier1_utilization < 1), all(analytic$tier2_utilization < 1))
 
 fmt <- analytic
-fmt[, -1] <- lapply(fmt[, -1], function(x) sprintf("%.2f", x))
+fmt[, -1] <- lapply(fmt[, -1], function(x) sprintf("%.2f", r2(x)))
 report_add("## 0. Analytic check (M/G/c, Allen-Cunneen)\n\n",
            "Ignores priorities, auto-closing and expiry. Waits are in minutes.\n\n",
            paste(md_table(fmt), collapse = "\n"), "\n")

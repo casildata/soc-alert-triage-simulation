@@ -47,13 +47,13 @@ daily_table <- do.call(rbind, lapply(names(DAY$staffing), function(st) {
   data.frame(
     staffing = st,
     analyst_hours = 2 * seat_hours(x),
-    fte = sprintf("%.0f", 2 * seat_hours(x) * 365 / 2080),
-    tier2_wait = sprintf("%.0f (P90 %.0f)", day_value(st, "investigation_wait"),
-                         day_value(st, "investigation_wait_p90")),
-    worst_hour = sprintf("%.0f at %02d:00", worst$investigation_wait, worst$hour),
-    high_late = sprintf("%.1f%%", 100 * day_value(st, "sla_breach_high")),
-    low_unreviewed = sprintf("%.1f%%", 100 * day_value(st, "low_unreviewed")),
-    missed = sprintf("%.1f", day_value(st, "missed_incidents_per_week")),
+    fte = sprintf("%.0f", r0(2 * seat_hours(x) * 365 / 2080)),
+    tier2_wait = sprintf("%.0f (P90 %.0f)", r0(day_value(st, "investigation_wait")),
+                         r0(day_value(st, "investigation_wait_p90"))),
+    worst_hour = sprintf("%.0f at %02d:00", r0(worst$investigation_wait), worst$hour),
+    high_late = sprintf("%.1f%%", r1(100 * day_value(st, "sla_breach_high"))),
+    low_unreviewed = sprintf("%.1f%%", r1(100 * day_value(st, "low_unreviewed"))),
+    missed = sprintf("%.1f", r1(day_value(st, "missed_incidents_per_week"))),
     meets = if (meets) "yes" else "no"
   )
 }))
@@ -140,8 +140,8 @@ flood_table <- do.call(rbind, lapply(names(DAY$staffing), function(st) {
   row <- function(d, s) d[d$staffing == st & d$start == s, ]
   cells <- unlist(lapply(names(f$start_hour), function(s) {
     x <- row(fl, s); y <- row(nf, s)
-    c(sprintf("%.0f%% (%.0f–%.0f)", 100 * x$p_missed, 100 * x$lower, 100 * x$upper),
-      sprintf("%.0f%%", 100 * y$p_missed))
+    c(sprintf("%.0f%% (%.0f–%.0f)", r0(100 * x$p_missed), r0(100 * x$lower), r0(100 * x$upper)),
+      sprintf("%.0f%%", r0(100 * y$p_missed)))
   }))
   data.frame(t(unname(c(st, cells))))
 }))
@@ -169,8 +169,8 @@ report_add(
   "## 4. Daily cycle, shifts and an alert flood\n\n",
   sprintf("Same average load as the baseline (%d alerts/hour), but following a daily profile: ", baseline$alerts_per_hour),
   sprintf("%.1f/hour at night, peaking at %.1f/hour in business hours. ",
-          baseline$alerts_per_hour * min(DAY$hourly_profile) / mean(DAY$hourly_profile),
-          baseline$alerts_per_hour * max(DAY$hourly_profile) / mean(DAY$hourly_profile)),
+          r1(baseline$alerts_per_hour * min(DAY$hourly_profile) / mean(DAY$hourly_profile)),
+          r1(baseline$alerts_per_hour * max(DAY$hourly_profile) / mean(DAY$hourly_profile))),
   sprintf("Shifts: night %02d:00-%02d:00, day %02d:00-%02d:00, evening %02d:00-24:00; the same number of analysts in each tier. ",
           baseline$shift_start[1], baseline$shift_start[2], baseline$shift_start[2], baseline$shift_start[3],
           baseline$shift_start[3]),

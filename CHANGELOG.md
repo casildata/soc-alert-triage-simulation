@@ -1,11 +1,10 @@
-# Changelog: coursework → public repository
+# Changelog: from the 2022 original to this release
 
 ## Rebuild for publication (2026)
 
-**Reframed** the ISQS 7339 Homework 3 queueing models as a two-tier SOC. Course
-materials are not included; the model was rewritten from scratch.
+**Reframed** the original 2022 queueing models (call centers and a clinic) as a two-tier SOC. The original problem materials are not redistributed; the model was rewritten from scratch.
 
-| Homework technique | Where it lives now |
+| Technique from the study | Where it lives now |
 |---|---|
 | `branch()` on a random type with different service distributions | Severity branch with triangular triage times |
 | `set_prioritization()` high/low patients | High / medium / low alert priority in both tiers |
@@ -30,7 +29,7 @@ materials are not included; the model was rewritten from scratch.
 - `testthat` suite with model tests, `renv.lock`, and CI (tests, pipeline, results check, R 4.1, gitleaks).
 
 **Not included**
-- Course-provided materials and the standalone homework problems.
+- Third-party problem statements and materials from the original program.
 
-## Original submission (Spring 2022)
-- ISQS 7339 Homework 3: discrete-event simulation with simmer
+## Original work (2022)
+- Graduate study in Simulation & Optimization, Texas Tech University: discrete-event simulation with simmer

@@ -9,7 +9,7 @@
 # staffing scenario (common random numbers). Arrivals stop at the horizon and the queues
 # then drain, so every measured alert has a known outcome and no wait is censored.
 # Every trajectory closure refers to the `env` created inside simulate_soc(), so each
-# replication reads its own queue lengths and attributes (the coursework version read a
+# replication reads its own queue lengths and attributes (the original 2022 version read a
 # global `env` shared by all replications).
 
 library(simmer)

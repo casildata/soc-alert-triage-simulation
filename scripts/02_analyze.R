@@ -42,9 +42,9 @@ is_share <- c("sla_breach_high", "sla_breach_medium", "low_auto_closed", "low_ex
 fmt_cell <- function(row) {
   lower <- max(row$lower, 0)   # a t-interval on a share near zero can dip below it
   if (row$metric %in% is_share) {
-    sprintf("%.1f%% (%.1f–%.1f)", 100 * row$mean, 100 * lower, 100 * row$upper)
+    sprintf("%.1f%% (%.1f–%.1f)", r1(100 * row$mean), r1(100 * lower), r1(100 * row$upper))
   } else {
-    sprintf("%.1f (%.1f–%.1f)", row$mean, lower, row$upper)
+    sprintf("%.1f (%.1f–%.1f)", r1(row$mean), r1(lower), r1(row$upper))
   }
 }
 cmp <- data.frame(metric = unname(show))
@@ -58,7 +58,7 @@ by_rep <- function(m, metric) m[[metric]][order(m$replication)]
 paired <- do.call(rbind, lapply(names(sim_results)[-1], function(nm) {
   d <- by_rep(rep_metrics[[nm]], "investigation_wait") - by_rep(rep_metrics[[1]], "investigation_wait")
   ci <- summarise_metrics(data.frame(replication = seq_along(d), d = d))
-  data.frame(scenario = nm, change = sprintf("%+.2f (%+.2f to %+.2f)", ci$mean, ci$lower, ci$upper))
+  data.frame(scenario = nm, change = sprintf("%+.2f (%+.2f to %+.2f)", r2(ci$mean), r2(ci$lower), r2(ci$upper)))
 }))
 names(paired) <- c("scenario", "change in tier-2 wait vs. baseline, min (paired 95% CI)")
 
@@ -66,7 +66,7 @@ names(paired) <- c("scenario", "change in tier-2 wait vs. baseline, min (paired 
 tier1_wait <- function(a) {
   w <- tapply(a$triage_wait, a$replication, mean, na.rm = TRUE)
   s <- summarise_metrics(data.frame(replication = seq_along(w), wait = as.numeric(w)))
-  sprintf("%.2f (%.2f–%.2f)", s$mean, s$lower, s$upper)
+  sprintf("%.2f (%.2f–%.2f)", r2(s$mean), r2(s$lower), r2(s$upper))
 }
 message("  simulating: baseline without priorities")
 fcfs <- modifyList(baseline, list(name = "Baseline, no priorities", priorities = FALSE))
@@ -77,7 +77,7 @@ priority_check <- data.frame(
   wait = c(tier1_wait(alerts[[1]]),
            tier1_wait(alert_table(get_mon_arrivals(fcfs_envs, ongoing = TRUE),
                                   get_mon_attributes(fcfs_envs), fcfs)),
-           sprintf("%.2f", analytic$tier1_mean_wait_min[1]))
+           sprintf("%.2f", r2(analytic$tier1_mean_wait_min[1])))
 )
 names(priority_check) <- c("baseline", "mean wait to triage, all severities (min, 95% CI)")
 

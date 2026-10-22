@@ -7,6 +7,12 @@ report_add <- function(...) {
   .report$sections <- c(.report$sections, paste0(..., collapse = ""))
 }
 
+# Round with R before sprintf(): the C library breaks exact ties differently on Windows and
+# Linux, and many results here are exact fractions (counts per replication) that land on one.
+r1 <- function(x) round(x, 1)
+r2 <- function(x) round(x, 2)
+r0 <- function(x) round(x)
+
 md_table <- function(df) {
   fmt <- function(x) if (is.numeric(x)) format(x, big.mark = ",", trim = TRUE) else as.character(x)
   cells <- vapply(df, fmt, character(nrow(df)))
