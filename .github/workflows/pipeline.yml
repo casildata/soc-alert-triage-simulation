@@ -39,7 +39,7 @@ jobs:
                         repos = getOption("repos"), prompt = FALSE)
 
       - name: Unit tests
-        run: Rscript -e 'testthat::test_dir("tests/testthat", stop_on_failure = TRUE)'
+        run: Rscript tests/testthat.R
 
       - name: Run the pipeline
         run: Rscript run_all.R
@@ -72,7 +72,7 @@ jobs:
         run: install.packages(c(readLines("r-packages.txt")[!grepl("^#", readLines("r-packages.txt"))], "testthat"))
 
       - name: Unit tests
-        run: Rscript -e 'testthat::test_dir("tests/testthat", stop_on_failure = TRUE)'
+        run: Rscript tests/testthat.R
 
   secret-scan:
     runs-on: ubuntu-24.04
